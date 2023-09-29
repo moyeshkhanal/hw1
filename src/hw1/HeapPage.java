@@ -46,7 +46,7 @@ public class HeapPage {
 
 	public int getId() {
 		//your code here
-		return 0;
+		return this.id;
 	}
 
 	/**
@@ -56,7 +56,7 @@ public class HeapPage {
 	 */
 	public int getNumSlots() {
 		//your code here
-		return 0;
+		return this.numSlots;
 	}
 
 	/**
@@ -65,7 +65,7 @@ public class HeapPage {
 	 */
 	private int getHeaderSize() {        
 		//your code here
-		return 0;
+		return this.header.length / 8;
 	}
 
 	/**
@@ -75,7 +75,9 @@ public class HeapPage {
 	 */
 	public boolean slotOccupied(int s) {
 		//your code here
-		return false;
+		int index = s / 8;
+		int offset = s % 8;
+		return (header[index] & offset) == 1;
 	}
 
 	/**
@@ -85,6 +87,13 @@ public class HeapPage {
 	 */
 	public void setSlotOccupied(int s, boolean value) {
 		//your code here
+		int index = s / 8;
+	    int offset = s % 8;
+	    if (value) {
+	        this.header[index] |= (1 << offset);
+	    } else {
+	        this.header[index] &= ~(1 << offset);
+	    }
 	}
 	
 	/**
@@ -95,6 +104,17 @@ public class HeapPage {
 	 */
 	public void addTuple(Tuple t) throws Exception {
 		//your code here
+		for (int i = 0; i < numSlots; i++) {
+	        if (!slotOccupied(i)) {
+	            if (!t.getDesc().equals(td)) {
+	                throw new Exception("TupleDesc mismatch.");
+	            }
+	            this.tuples[i] = t;
+	            setSlotOccupied(i, true);
+	            return;
+	        }
+	    }
+	    throw new Exception("No empty slots");
 	}
 
 	/**
@@ -105,6 +125,12 @@ public class HeapPage {
 	 */
 	public void deleteTuple(Tuple t) {
 		//your code here
+		 int tupleId = t.getId();
+		    if (t.getPid() != id || !slotOccupied(tupleId)) {
+		        throw new Exception("Tuple is not in the page.");
+		    }
+		    this.tuples[tupleId] = null;
+		    setSlotOccupied(tupleId, false);
 	}
 	
 	/**
@@ -232,6 +258,22 @@ public class HeapPage {
 	 */
 	public Iterator<Tuple> iterator() {
 		//your code here
-		return null;
+		return new Iterator<Tuple>() {
+	        private int currentIndex = 0;
+
+	        public boolean hasNext() {
+	            while (currentIndex < numSlots && !slotOccupied(currentIndex)) {
+	                currentIndex++;
+	            }
+	            return currentIndex < numSlots;
+	        }
+
+	        public Tuple next() {
+	            if (!hasNext()) {
+	                throw new NoSuchElementException();
+	            }
+	            return tuples[currentIndex++];
+	        }
+	    };
 	}
 }
