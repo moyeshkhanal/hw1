@@ -79,7 +79,7 @@ public class TupleDesc {
         if(i >= 0 && this.types.length > i){
             return this.types[i];
         }
-    	throw new NoSuchAlgorithmException();
+    	throw new NoSuchElementException();
     }
 
     /**
